@@ -28,16 +28,27 @@ type ExecCommandHandler struct {
 
 func (h *ExecCommandHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
-		out, err := exec.Command(h.Command[0], h.Command[1:]...).Output() // StdoutPipe
+		cmd := exec.Command(h.Command[0], h.Command[1:]...)
+		stdout, err := cmd.StdoutPipe()
+		if err != nil {
+			w.WriteHeader(500)
+			fmt.Fprintln(os.Stderr, err)
+			return
+		}
+		err = cmd.Start()
 		if err != nil {
 			w.WriteHeader(500)
 			fmt.Fprintln(os.Stderr, err)
 			return
 		}
 		w.WriteHeader(200)
-		_, err = w.Write([]byte(out))
+		_, err = io.Copy(w, stdout)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
+		}
+		err = cmd.Wait()
+		if err != nil {
+			// do nothing
 		}
 	} else {
 		w.WriteHeader(405)
@@ -155,9 +166,9 @@ var (
 	Version = "0.0.1"
 )
 
-func Main() {
+func Main(args []string) {
 	var opts Options
-	args, err := flags.Parse(&opts)
+	args, err := flags.ParseArgs(&opts, args)
 	if err != nil {
 		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
 			os.Exit(0)

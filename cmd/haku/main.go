@@ -1,9 +1,11 @@
 package main
 
 import (
+	"os"
+
 	"github.com/taskie/haku"
 )
 
 func main() {
-	haku.Main()
+	haku.Main(os.Args)
 }
