@@ -143,28 +143,32 @@ func (h *Haku) Run() {
 }
 
 type Options struct {
-	Config     []string `short:"c" long:"config" env:"HAKU_CONFIG"`
-	Addr       string   `short:"a" long:"addr" env:"HAKU_ADDR"`
-	Persistent bool     `short:"p" long:"persistent" env:"HAKU_PERSISTENT"`
-	NoColor    bool     `long:"no-color" env:"NO_COLOR"`
-	Verbose    bool     `short:"v" long:"verbose"`
-	Version    bool     `short:"V" long:"version"`
+	// Config     []string `short:"c" long:"config" env:"HAKU_CONFIG" description:"config file"`
+	Addr       string `short:"a" long:"addr" env:"HAKU_ADDR" default:":8900" value-name:"ADDR" description:"server address"`
+	Persistent bool   `short:"p" long:"persistent" env:"HAKU_PERSISTENT" description:"persist stdin"`
+	NoColor    bool   `long:"no-color" env:"NO_COLOR" description:"NOT colorize output"`
+	Verbose    []bool `short:"v" long:"verbose" description:"verbose mode"`
+	Version    bool   `short:"V" long:"version" description:"show version"`
 }
 
-func (o *Options) Canonicalize() error {
-	if o.Addr == "" {
-		o.Addr = ":8900"
-	}
-	return nil
-}
+var (
+	Version = "0.0.1"
+)
 
 func Main() {
 	var opts Options
 	args, err := flags.Parse(&opts)
 	if err != nil {
-		os.Exit(1)
+		if flagsErr, ok := err.(*flags.Error); ok && flagsErr.Type == flags.ErrHelp {
+			os.Exit(0)
+		} else {
+			os.Exit(1)
+		}
 	}
-	_ = opts.Canonicalize()
+	if opts.Version {
+		fmt.Println(Version)
+		os.Exit(0)
+	}
 	var h Haku
 	if len(args) == 0 {
 		h = Haku{
